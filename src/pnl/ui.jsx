@@ -125,22 +125,26 @@ function SlicerList({ title, options, selected, onChange, maxHeight = 'max-h-40'
   )
 }
 
+// En el modelo original esto era "Financiero" / "Económico": en la práctica solo
+// incluye o excluye los movimientos de la cuenta de provisiones (3110101002).
+// Internamente el valor '' = con provisiones y 'Económico' = sin provisiones.
 function VistaSlicer({ value, onChange }) {
   const options = [
-    { v: '', label: 'Todas' },
-    { v: 'Financiero', label: 'Financiero' },
-    { v: 'Económico', label: 'Económico' },
+    { v: '', label: 'Con provisiones' },
+    { v: 'Económico', label: 'Sin provisiones' },
   ]
+  const current = value === 'Económico' ? 'Económico' : ''
   return (
     <div>
-      <p className="text-txt-secondary text-[11px] font-semibold uppercase tracking-wider mb-1.5">Vista</p>
+      <p className="text-txt-secondary text-[11px] font-semibold uppercase tracking-wider mb-1.5">Provisiones</p>
       <div className="flex rounded-lg border border-elevated overflow-hidden">
         {options.map((o) => (
           <button
             key={o.v}
             onClick={() => onChange(o.v)}
+            aria-pressed={current === o.v}
             className={`flex-1 px-2 py-1.5 text-xs transition-colors ${
-              value === o.v
+              current === o.v
                 ? 'bg-accent-blue text-white'
                 : 'text-txt-secondary hover:bg-elevated/60'
             }`}

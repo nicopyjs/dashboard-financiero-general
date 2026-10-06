@@ -99,6 +99,7 @@ export function derive(p) {
  *
  * filters = { years: number[], months: number[], areas: string[],
  *             vista: '' | 'Financiero' | 'Económico',
+ *                    ('' y 'Financiero' = con provisiones; 'Económico' = sin provisiones)
  *             tipos: string[], clasifs: string[], aliases: string[] }
  * Una lista vacía significa "sin filtrar" (como un slicer sin selección).
  */

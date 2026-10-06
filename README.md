@@ -47,5 +47,5 @@ node scripts/validate.mjs      # compara contra scripts/baseline.mjs (local, no 
 - `TipoGasto`: manda `Clasificacion_manoObra` del plan; si no, centro `GN…` = Administrativo,
   centro con "General" = Indirecto, resto = Directo. DAX no distingue mayúsculas
   ("Gasto directo" = "Gasto Directo"); aquí se normaliza.
-- Vista **Económico** excluye la cuenta `3110101002`; **Financiero** las incluye todas.
+- El filtro **Provisiones** reemplaza a la "vista" del reporte original: **Sin provisiones** (antes Económico) excluye la cuenta `3110101002`; **Con provisiones** (antes Financiero) incluye todas.
 - El presupuesto de ganancias no depende de tipo de gasto ni de clasificación.
