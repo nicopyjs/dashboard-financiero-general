@@ -2,3 +2,7 @@ node_modules
 dist
 .vercel
 .env*
+
+# Cifras financieras extraídas de Power BI: solo local (el repo es público)
+scripts/baseline.mjs
+!.env.example

@@ -1,1 +1,9 @@
-{"name":"dashboard-financiero-general","buildCommand":"npm run build","outputDirectory":"dist","framework":"vite"}
+{
+  "name": "dashboard-financiero-general",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "functions": {
+    "api/*.js": { "maxDuration": 60 }
+  }
+}
