@@ -88,6 +88,12 @@ export function loadCentros() {
   })
 }
 
+/** Centros TYP: existen en los movimientos pero no en la hoja maestra. */
+function centroPorPrefijo(centroId) {
+  if (!String(centroId).toUpperCase().startsWith('TYP')) return undefined
+  return { description: 'TYP', area: 'TYP' }
+}
+
 // --- Asientos --------------------------------------------------------------
 
 /** Filas crudas de una hoja de detalle (solo las columnas necesarias). */
@@ -189,6 +195,7 @@ export function loadModel() {
 
     // AreasNegocio: todas las áreas de los centros, aunque no tengan movimientos.
     for (const c of centros.values()) intern('areas', c.area)
+    intern('areas', 'TYP')
 
     const cube = new Map()
     const lines = []
@@ -199,7 +206,7 @@ export function loadModel() {
       if (monto === 0) continue
       if (!r.date) continue // sin fecha no entra al calendario del modelo
 
-      const centro = centros.get(r.centroId)
+      const centro = centros.get(r.centroId) ?? centroPorPrefijo(r.centroId)
       const cuenta = plan.get(r.accountCode)
       const area = centro?.area || ''
       const tg = tipoGasto({
