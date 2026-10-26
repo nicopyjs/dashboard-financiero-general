@@ -91,7 +91,9 @@ export function loadCentros() {
 /** Centros TYP: existen en los movimientos pero no en la hoja maestra. */
 function centroPorPrefijo(centroId) {
   if (!String(centroId).toUpperCase().startsWith('TYP')) return undefined
-  return { description: 'TYP', area: 'TYP' }
+  // TYPGNR... es el general del área (como "General" en Instalaciones etc.) -> gasto indirecto.
+  const general = String(centroId).toUpperCase().startsWith('TYPGNR')
+  return { description: general ? 'TYP - General' : 'TYP', area: 'TYP' }
 }
 
 // --- Asientos --------------------------------------------------------------
