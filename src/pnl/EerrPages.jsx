@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { usePnl, useDetalle } from './PnlProvider'
 import { PageFrame } from './layout'
-import { Panel, Empty, Cascade, cascadeScale, COLORS, fmtPct } from './ui'
+import { Panel, Empty, Cascade, ChartTooltip, cascadeScale, COLORS, MES_CORTO, axisProps, tickFmt, fmtPct } from './ui'
 import { formatCLP } from '../utils/formatters'
 
 const SLICERS_AREA = ['vista', 'year', 'month', 'area', 'tipo', 'alias']
@@ -102,9 +103,55 @@ export function EerrArea() {
   )
 }
 
+/** Barras mensuales (estado de resultado, gasto administrativo, resultado empresa) + línea del resultado acumulado. */
+function MensualEmpresa({ rows }) {
+  const data = useMemo(() => {
+    const sorted = [...rows].sort((a, b) => a.ym.localeCompare(b.ym))
+    const multiYear = new Set(sorted.map((r) => r.year)).size > 1
+    let acum = 0
+    return sorted.map((r) => {
+      acum += r.estadoResultadoEmpresa
+      return {
+        mes: multiYear ? `${MES_CORTO[r.month - 1]} ${String(r.year).slice(2)}` : MES_CORTO[r.month - 1],
+        estadoResultado: r.estadoResultado,
+        gastoAdministrativo: Math.abs(r.gastoAdministrativo),
+        estadoResultadoEmpresa: r.estadoResultadoEmpresa,
+        acumulado: acum,
+      }
+    })
+  }, [rows])
+
+  if (!data.length) return <Empty />
+  return (
+    <ResponsiveContainer width="100%" height={320}>
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <XAxis dataKey="mes" {...axisProps} tickMargin={8} />
+        <YAxis {...axisProps} tickFormatter={tickFmt} width={60} />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: '#ffffff08' }} />
+        <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
+        <Bar dataKey="estadoResultado" name="Estado de resultado" fill={COLORS.ventas} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Bar dataKey="gastoAdministrativo" name="Gasto administrativo" fill={COLORS.gasto} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Bar dataKey="estadoResultadoEmpresa" name="Estado de resultado empresa" fill={COLORS.gold} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Line
+          type="monotone"
+          dataKey="acumulado"
+          name="Resultado empresa acumulado"
+          stroke={COLORS.gold}
+          strokeWidth={2}
+          strokeDasharray="2 4"
+          dot={false}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
 export function EerrEmpresa() {
   const { engine, filters } = usePnl()
   const t = useMemo(() => engine.totals(filters), [engine, filters])
+  const mensual = useMemo(() => engine.aggregate(filters, ['ym']), [engine, filters])
 
   const real = [
     { label: 'Estado de resultado', value: t.estadoResultado },
@@ -128,6 +175,9 @@ export function EerrEmpresa() {
           <Cascade rows={real} scale={scale} />
         </Panel>
       </div>
+      <Panel title="Resumen mensual" subtitle="Estado de resultado, gasto administrativo y resultado empresa por mes; la línea punteada es el resultado empresa acumulado" delay={90}>
+        <MensualEmpresa rows={mensual} />
+      </Panel>
       <Panel title="Resumen" delay={120}>
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           {[
