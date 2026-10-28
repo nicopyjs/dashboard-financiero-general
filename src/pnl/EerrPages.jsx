@@ -35,6 +35,7 @@ export function EerrArea() {
   const { engine, filters } = usePnl()
   const t = useMemo(() => engine.totals(filters), [engine, filters])
   const detalle = useDetalle('eerr', filters)
+  const mensual = useMemo(() => engine.aggregate(filters, ['ym']), [engine, filters])
 
   const real = realRows(t)
   const ppto = pptoRows(t)
@@ -54,6 +55,14 @@ export function EerrArea() {
           </p>
         </Panel>
       </div>
+
+      <Panel
+        title="Resumen mensual"
+        subtitle="Ventas, gasto directo e indirecto y estado de resultado por mes; la línea punteada es el estado de resultado acumulado"
+        delay={90}
+      >
+        <MensualChart rows={mensual} series={SERIES_AREA} />
+      </Panel>
 
       <Panel
         title="Detalle por cuenta"
@@ -103,23 +112,27 @@ export function EerrArea() {
   )
 }
 
-/** Barras mensuales (estado de resultado, gasto administrativo, resultado empresa) + línea del resultado acumulado. */
-function MensualEmpresa({ rows }) {
+/**
+ * Barras mensuales (ingreso, gasto, resultado) + línea del resultado acumulado.
+ * series: { ingreso, gasto, resultado } con { name, get(fila) }; el gasto se dibuja en positivo.
+ */
+function MensualChart({ rows, series }) {
   const data = useMemo(() => {
     const sorted = [...rows].sort((a, b) => a.ym.localeCompare(b.ym))
     const multiYear = new Set(sorted.map((r) => r.year)).size > 1
     let acum = 0
     return sorted.map((r) => {
-      acum += r.estadoResultadoEmpresa
+      const resultado = series.resultado.get(r)
+      acum += resultado
       return {
         mes: multiYear ? `${MES_CORTO[r.month - 1]} ${String(r.year).slice(2)}` : MES_CORTO[r.month - 1],
-        estadoResultado: r.estadoResultado,
-        gastoAdministrativo: Math.abs(r.gastoAdministrativo),
-        estadoResultadoEmpresa: r.estadoResultadoEmpresa,
+        ingreso: series.ingreso.get(r),
+        gasto: Math.abs(series.gasto.get(r)),
+        resultado,
         acumulado: acum,
       }
     })
-  }, [rows])
+  }, [rows, series])
 
   if (!data.length) return <Empty />
   return (
@@ -130,13 +143,13 @@ function MensualEmpresa({ rows }) {
         <YAxis {...axisProps} tickFormatter={tickFmt} width={60} />
         <Tooltip content={<ChartTooltip />} cursor={{ fill: '#ffffff08' }} />
         <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-        <Bar dataKey="estadoResultado" name="Estado de resultado" fill={COLORS.ventas} radius={[3, 3, 0, 0]} maxBarSize={18} />
-        <Bar dataKey="gastoAdministrativo" name="Gasto administrativo" fill={COLORS.gasto} radius={[3, 3, 0, 0]} maxBarSize={18} />
-        <Bar dataKey="estadoResultadoEmpresa" name="Estado de resultado empresa" fill={COLORS.gold} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Bar dataKey="ingreso" name={series.ingreso.name} fill={COLORS.ventas} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Bar dataKey="gasto" name={series.gasto.name} fill={COLORS.gasto} radius={[3, 3, 0, 0]} maxBarSize={18} />
+        <Bar dataKey="resultado" name={series.resultado.name} fill={COLORS.gold} radius={[3, 3, 0, 0]} maxBarSize={18} />
         <Line
           type="monotone"
           dataKey="acumulado"
-          name="Resultado empresa acumulado"
+          name={`${series.resultado.name} acumulado`}
           stroke={COLORS.gold}
           strokeWidth={2}
           strokeDasharray="2 4"
@@ -146,6 +159,18 @@ function MensualEmpresa({ rows }) {
       </ComposedChart>
     </ResponsiveContainer>
   )
+}
+
+const SERIES_EMPRESA = {
+  ingreso: { name: 'Estado de resultado', get: (r) => r.estadoResultado },
+  gasto: { name: 'Gasto administrativo', get: (r) => r.gastoAdministrativo },
+  resultado: { name: 'Estado de resultado empresa', get: (r) => r.estadoResultadoEmpresa },
+}
+
+const SERIES_AREA = {
+  ingreso: { name: 'Ventas netas', get: (r) => r.ventasNeto },
+  gasto: { name: 'Gasto directo e indirecto', get: (r) => r.gastoDirecto + r.gastoIndirecto },
+  resultado: { name: 'Estado de resultado', get: (r) => r.estadoResultado },
 }
 
 export function EerrEmpresa() {
@@ -176,7 +201,7 @@ export function EerrEmpresa() {
         </Panel>
       </div>
       <Panel title="Resumen mensual" subtitle="Estado de resultado, gasto administrativo y resultado empresa por mes; la línea punteada es el resultado empresa acumulado" delay={90}>
-        <MensualEmpresa rows={mensual} />
+        <MensualChart rows={mensual} series={SERIES_EMPRESA} />
       </Panel>
       <Panel title="Resumen" delay={120}>
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
